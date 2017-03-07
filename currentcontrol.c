@@ -1,6 +1,59 @@
 #include "currentcontrol.h"
+#include "isense.h"
+#include "utilities.h"
 
 int PWM_val = 0; // it doesn't have to be volatile; it's only read in the ISR
+
+volatile float Kpc = 0, Kic = 0;   // control gains for current
+static volatile int itest_counter = 0;
+static volatile int i_ref = 0;
+static volatile int Eint = 0;
+
+volatile int mes_array[100];  // measured values to plot
+volatile int ref_array[100];  // reference values to plot
+
+void set_PWM_from_val(int PWM_setting){
+
+    int PWM_mag;
+    int PWM_dir;
+
+    if (PWM_setting >= 0){
+        PWM_dir = 1;
+        PWM_mag = PWM_setting;
+    } else{
+        PWM_dir = 0;
+        PWM_mag = -PWM_setting;
+    }
+
+    OC1RS = PWM_mag * 40;       // set pwm duty cycle by magnitude of PWM, scaled to 1 period = 4000 counts
+
+    LATDbits.LATD1 = PWM_dir;   // set phase by sign of PWM_val
+
+}
+
+int pi_current_controller(int measured, int reference){
+    // uses set gains to provide control
+    // takes in the measured and reference ADC counts
+    // outputs the OC1RS setting to reach reference values
+
+    int error;                          // the absolute error in ADC counts
+    float u;                            // the control effort in floating point
+    int u_norm;                         // the control effort, normalized (first to percentage, then to OC1RS setting)
+
+    error = reference - measured;
+    Eint += error;
+    u = (Kpc * error) + (Kic * Eint);     // u calculated in floating point
+
+    if (u_norm > 100){  // u_norm is the PWM_val
+        u_norm = 100;
+    } else if (u_norm < -100){
+        u_norm  = -100;
+    }
+
+    // u_norm = (u_norm * PR3) / 100;
+
+    return u_norm;
+}
 
 void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
     // interrupt for 5kHz current controller
@@ -8,9 +61,6 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
     OC1RS = 1000;                       // duty cycle = OC1RS/(PR3+1) = 25%
 
     // LATDINV = 0x2;                      // invert pin D1
-
-    int PWM_mag;
-    int PWM_dir;
 
     switch (get_mode()) {
         case 1: //IDLE
@@ -21,20 +71,31 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
         case 2: // PWM
             // set PWM value according to user specified value
 
-            if (PWM_val >= 0){
-                PWM_dir = 1;
-                PWM_mag = PWM_val;
-            } else{
-                PWM_dir = 0;
-                PWM_mag = -PWM_val;
-            }
-
-            OC1RS = PWM_mag * 40;       // set pwm duty cycle by magnitude of PWM, scaled to 1 period = 4000 counts
-
-            LATDbits.LATD1 = PWM_dir;   // set phase by sign of PWM_val
-
+            set_PWM_from_val(PWM_val);
             break;
         case 3: // ITEST
+            // generate reference current or loop measurement
+            if (itest_counter == 0) i_ref = 200;
+            else if (itest_counter == 25) i_ref = -200;
+            else if (itest_counter == 50) i_ref = 200;
+            else if (itest_counter == 75) i_ref = -200;
+            else if (itest_counter == 99){
+                itest_counter = 0;
+                enum mode_t new_mode = IDLE;
+                set_mode(new_mode);
+            }
+
+            // save values for plotting
+
+            mes_array[itest_counter] = isense_curr();
+            ref_array[itest_counter] = i_ref;
+
+            // calculate effort and set PWM
+
+            set_PWM_from_val(pi_current_controller(mes_array[itest_counter], i_ref));
+
+            itest_counter++;
+
             break;
         case 4: // HOLD
             break;

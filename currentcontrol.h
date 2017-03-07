@@ -5,6 +5,11 @@
 
 extern int PWM_val;
 
+extern volatile float Kpc, Kic;   // control gains for current
+
+extern volatile int mes_array[100];  // measured values to plot
+extern volatile int ref_array[100];  // reference values to plot
+
 void currentcontrol_init();          // initialize the current control module
 
 int encoder_ticks();          // read the encoder, in ticks
