@@ -11,6 +11,7 @@
 // volatile int PWM_val = 0;
 extern int PWM_val;
 extern volatile float Kpc, Kic;
+extern volatile float Kpp, Kip, Kdp;
 
 extern volatile int mes_array[100];  // measured values to plot
 extern volatile int ref_array[100];  // reference values to plot
@@ -54,8 +55,29 @@ int main(){
         sprintf(lcd_string, "Received %c",buffer[0]);
         LCD_WriteString(lcd_string);
         switch (buffer[0]) {
+            case 'i':
+            {
+                // sets position gains
+                NU32_ReadUART3(buffer,BUF_SIZE);
+                sscanf(buffer, "%f %f %f", &Kpp, &Kip, &Kdp);
+                sprintf(lcd_string, "Kp=%1.0f Ki=%1.0f Kd=%1.0f",Kpp, Kip, Kdp);
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                break;
+            }
+            case 'j':
+            {
+                // gets position gains
+                sprintf(buffer, "%f %f %f\r\n", Kpp, Kip, Kdp);
+                NU32_WriteUART3(buffer);
+                sprintf(lcd_string, "Kp=%1.0f Ki=%1.0f Kd=%1.0f",Kpp, Kip, Kdp);
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                break;
+            }
             case 'k':
             {
+                // runs current testing
                 mode = ITEST;
                 while (mode == ITEST){
                     sprintf(lcd_string, "Blocking");
@@ -69,6 +91,9 @@ int main(){
                     sprintf(buffer, "%d %d\r\n", mes_array[i], ref_array[i]);
                     NU32_WriteUART3(buffer);
                 }
+                sprintf(lcd_string, "Current test done");
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
                 break;
             }
             case 'h':
