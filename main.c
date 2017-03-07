@@ -58,7 +58,9 @@ int main(){
             {
                 mode = ITEST;
                 while (mode == ITEST){
-                    ;                                           // do nothing until ISR says data storing is done
+                    sprintf(lcd_string, "Blocking");
+                    LCD_Move(1,0);
+                    LCD_WriteString(lcd_string);
                 }
                 sprintf(buffer, "%d\r\n", 100);
                 NU32_WriteUART3(buffer);
@@ -67,6 +69,7 @@ int main(){
                     sprintf(buffer, "%d %d\r\n", mes_array[i], ref_array[i]);
                     NU32_WriteUART3(buffer);
                 }
+                break;
             }
             case 'h':
             {

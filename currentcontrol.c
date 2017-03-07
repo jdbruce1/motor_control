@@ -6,7 +6,7 @@ int PWM_val = 0; // it doesn't have to be volatile; it's only read in the ISR
 
 volatile float Kpc = 0, Kic = 0;   // control gains for current
 static volatile int itest_counter = 0;
-static volatile int i_ref = 0;
+static volatile int i_ref = 200;
 static volatile int Eint = 0;
 
 volatile int mes_array[100];  // measured values to plot
@@ -44,10 +44,12 @@ int pi_current_controller(int measured, int reference){
     Eint += error;
     u = (Kpc * error) + (Kic * Eint);     // u calculated in floating point
 
-    if (u_norm > 100){  // u_norm is the PWM_val
+    if (u > 100){  // u_norm is the PWM_val
         u_norm = 100;
-    } else if (u_norm < -100){
+    } else if (u < -100){
         u_norm  = -100;
+    } else{
+        u_norm = (int) u;
     }
 
     // u_norm = (u_norm * PR3) / 100;
@@ -59,6 +61,8 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
     // interrupt for 5kHz current controller
     // sets the next value for PWM on cycle values
     OC1RS = 1000;                       // duty cycle = OC1RS/(PR3+1) = 25%
+
+    int control_effort;
 
     // LATDINV = 0x2;                      // invert pin D1
 
@@ -75,7 +79,7 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
             break;
         case 3: // ITEST
             // generate reference current or loop measurement
-            if (itest_counter == 0) i_ref = 200;
+            if (itest_counter < 25) i_ref = 200;
             else if (itest_counter == 25) i_ref = -200;
             else if (itest_counter == 50) i_ref = 200;
             else if (itest_counter == 75) i_ref = -200;
@@ -91,8 +95,9 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
             ref_array[itest_counter] = i_ref;
 
             // calculate effort and set PWM
-
-            set_PWM_from_val(pi_current_controller(mes_array[itest_counter], i_ref));
+            control_effort = pi_current_controller(mes_array[itest_counter], i_ref);
+            // mes_array[itest_counter] = control_effort; //temporary, view control effort output
+            set_PWM_from_val(control_effort);
 
             itest_counter++;
 
