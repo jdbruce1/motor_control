@@ -1,7 +1,5 @@
 #include "positioncontrol.h"
 
-#define IMAX 400 // the maximum current control signal (tuneable)
-
 int angle_command; // 10*angle
 
 volatile float Kpp = 0, Kip = 0, Kdp = 0; // position control gains
@@ -10,6 +8,12 @@ static volatile int Eint = 0;
 static volatile int e_prev = 0;
 
 extern volatile int current_command; // sent from position controller
+
+volatile int mes_pos_array[MAX_TRAJ];  // measured values to plot
+volatile int ref_pos_array[MAX_TRAJ];  // reference values to plot
+
+static volatile int traj_ind = 0;  // index into trajectory arrays
+volatile int traj_len;
 
 int pid_position_controller(int measured, int reference){
     // uses set gains to provide control
@@ -28,7 +32,7 @@ int pid_position_controller(int measured, int reference){
 
     e_prev = error;
 
-    if (u > IMAX){  // u_norm is the PWM_val
+    if (u > IMAX){  // u_norm is the current command
         u_norm = IMAX;
     } else if (u < -IMAX){
         u_norm  = -IMAX;
@@ -49,6 +53,15 @@ void __ISR(_TIMER_4_VECTOR, IPL4SOFT) position_controller(void){
             current_command = pid_position_controller(encoder_angle(), angle_command);
             break;
         case 5: // TRACK
+            if (traj_ind > traj_len){
+                traj_ind = 0;
+                mode = HOLD;
+                break;
+            }
+            mes_pos_array[traj_ind] = encoder_angle();
+            current_command = pid_position_controller(mes_pos_array[traj_ind], ref_pos_array[traj_ind]);
+
+            traj_ind++;
             break;
         default:
             break;

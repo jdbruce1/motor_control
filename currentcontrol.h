@@ -9,8 +9,8 @@ extern int PWM_val;
 
 extern volatile float Kpc, Kic;   // control gains for current
 
-extern volatile int mes_array[100];  // measured values to plot
-extern volatile int ref_array[100];  // reference values to plot
+extern volatile int mes_curr_array[100];  // measured values to plot
+extern volatile int ref_curr_array[100];  // reference values to plot
 
 extern volatile int current_command; // sent from position controller
 

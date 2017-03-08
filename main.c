@@ -15,11 +15,16 @@ extern volatile float Kpc, Kic;
 extern volatile float Kpp, Kip, Kdp;
 extern int angle_command;
 
-extern volatile int mes_array[100];  // measured values to plot
-extern volatile int ref_array[100];  // reference values to plot
+extern volatile int mes_curr_array[100];  // measured values to plot
+extern volatile int ref_curr_array[100];  // reference values to plot
+
+extern volatile int mes_pos_array[MAX_TRAJ];  // measured values to plot
+extern volatile int ref_pos_array[MAX_TRAJ];  // reference values to plot
+extern volatile int traj_len;
 
 int main(){
     char buffer[BUF_SIZE];
+    int i; // loop counter
     NU32_Startup(); // cache on, min flash wait, interrupts on, LED/button init, UART init
     NU32_LED1 = 1;  // turn off the LEDs
     NU32_LED2 = 1;
@@ -57,6 +62,43 @@ int main(){
         sprintf(lcd_string, "Received %c",buffer[0]);
         LCD_WriteString(lcd_string);
         switch (buffer[0]) {
+            case 'o':
+            {
+                // execute trajectory
+                mode = TRACK;
+                while (mode == TRACK){
+                    sprintf(lcd_string, "Blocking");
+                    LCD_Move(1,0);
+                    LCD_WriteString(lcd_string);
+                }
+                sprintf(buffer, "%d\r\n", traj_len);
+                NU32_WriteUART3(buffer);
+                for (i=0; i<traj_len; i++){                      // send plot data to MATLAB
+                    sprintf(buffer, "%d %d\r\n", mes_pos_array[i], ref_pos_array[i]);
+                    NU32_WriteUART3(buffer);
+                }
+                sprintf(lcd_string, "Tracking done");
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                break;
+            }
+            case 'n': // fall through to m case, same on PIC side
+            case 'm':
+            {
+                // load step trajectory
+                // listen for trajectory length
+                NU32_ReadUART3(buffer,BUF_SIZE);
+                sscanf(buffer, "%d", &traj_len);
+                if (traj_len > MAX_TRAJ) traj_len = MAX_TRAJ;
+                for (i=0; i<traj_len; i++){
+                    NU32_ReadUART3(buffer,BUF_SIZE);
+                    sscanf(buffer, "%d", &ref_pos_array[i]); // angles should be sent in 10ths of degrees
+                }
+                sprintf(lcd_string, "Array Stored");
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                break;
+            }
             case 'l':
             {
                 // goes to given angle
@@ -100,9 +142,8 @@ int main(){
                 }
                 sprintf(buffer, "%d\r\n", 100);
                 NU32_WriteUART3(buffer);
-                int i;
                 for (i=0; i<100; i++){                      // send plot data to MATLAB
-                    sprintf(buffer, "%d %d\r\n", mes_array[i], ref_array[i]);
+                    sprintf(buffer, "%d %d\r\n", mes_curr_array[i], ref_curr_array[i]);
                     NU32_WriteUART3(buffer);
                 }
                 sprintf(lcd_string, "ITEST done");

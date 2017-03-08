@@ -9,8 +9,8 @@ static volatile int Eint = 0;
 
 volatile int current_command; // sent from position controller
 
-volatile int mes_array[100];  // measured values to plot
-volatile int ref_array[100];  // reference values to plot
+volatile int mes_curr_array[100];  // measured values to plot
+volatile int ref_curr_array[100];  // reference values to plot
 
 void set_PWM_from_val(int PWM_setting){
 
@@ -91,24 +91,23 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
 
             // save values for plotting
 
-            mes_array[itest_counter] = isense_curr();
-            ref_array[itest_counter] = i_ref;
+            mes_curr_array[itest_counter] = isense_curr();
+            ref_curr_array[itest_counter] = i_ref;
 
             // calculate effort and set PWM
-            control_effort = pi_current_controller(mes_array[itest_counter], i_ref);
-            // mes_array[itest_counter] = control_effort; //temporary, view control effort output
+            control_effort = pi_current_controller(mes_curr_array[itest_counter], i_ref);
+            // mes_curr_array[itest_counter] = control_effort; //temporary, view control effort output
             set_PWM_from_val(control_effort);
 
             itest_counter++;
 
             break;
-        case 4: // HOLD
+        case 4: // HOLD is same as track, fall through
+        case 5: // TRACK
             // use the current command, as set by position controller
             LATDINV = 0b1000;       // invert pin D3
             control_effort = pi_current_controller(isense_curr(), current_command);
             set_PWM_from_val(control_effort);
-            break;
-        case 5: // TRACK
             break;
     }
 
