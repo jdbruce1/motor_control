@@ -1,6 +1,4 @@
 #include "currentcontrol.h"
-#include "isense.h"
-#include "utilities.h"
 
 int PWM_val = 0; // it doesn't have to be volatile; it's only read in the ISR
 
@@ -60,7 +58,7 @@ int pi_current_controller(int measured, int reference){
 void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
     // interrupt for 5kHz current controller
     // sets the next value for PWM on cycle values
-    OC1RS = 1000;                       // duty cycle = OC1RS/(PR3+1) = 25%
+    // OC1RS = 1000;                       // duty cycle = OC1RS/(PR3+1) = 25%
 
     int control_effort;
 
@@ -144,8 +142,8 @@ void currentcontrol_init(){
     OC1CONbits.ON = 1;                  // turn on OC1
 
 
-        // digital output to control motor direction
-        // use RD1, it's right next to D0 for the PWM
+    // digital output to control motor direction
+    // use RD1, it's right next to D0 for the PWM
 
     TRISDbits.TRISD1 = 0;               // set D1 as digital output
     LATDbits.LATD1 = 1;                 // set D1 high to start

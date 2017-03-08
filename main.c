@@ -4,6 +4,7 @@
 #include "currentcontrol.h"
 #include "isense.h"
 #include "utilities.h"
+#include "positioncontrol.h"
 #include <stdio.h>
 
 #define BUF_SIZE 200
@@ -21,28 +22,28 @@ int main(){
     NU32_Startup(); // cache on, min flash wait, interrupts on, LED/button init, UART init
     NU32_LED1 = 1;  // turn off the LEDs
     NU32_LED2 = 1;
-    LCD_Setup();
 
     __builtin_disable_interrupts();
     // in future, initialize modules or peripherals here
     encoder_init();
+    encoder_reset();
 
     mode = IDLE;
     isense_init();                  // initialize current sensor
     currentcontrol_init();
-    PWM_val = 0;                    // remove this later
+    // PWM_val = 0;                    // remove this later
+    positioncontrol_init();
+
     __builtin_enable_interrupts();
 
-    // LCD stuff
-
+    // LCD setup (interruptable)
     char lcd_string[16];
+    LCD_Setup();
     LCD_Clear();
     LCD_Move(0,0);
 
     sprintf(lcd_string, "Program Started");
     LCD_WriteString(lcd_string);
-
-    // End LCD test stuff
 
     while(1)
     {

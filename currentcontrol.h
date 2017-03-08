@@ -2,6 +2,8 @@
 #define CURRENTCONTROL__H__
 
 #include "NU32.h"
+#include "isense.h"
+#include "utilities.h"
 
 extern int PWM_val;
 
