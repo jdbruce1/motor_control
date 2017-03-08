@@ -32,13 +32,15 @@ int pid_position_controller(int measured, int reference){
 
     e_prev = error;
 
-    if (u > IMAX){  // u_norm is the current command
-        u_norm = IMAX;
-    } else if (u < -IMAX){
-        u_norm  = -IMAX;
-    } else{
-        u_norm = (int) u;
-    }
+    // if (u > IMAX){  // u_norm is the current command
+    //     u_norm = IMAX;
+    // } else if (u < -IMAX){
+    //     u_norm  = -IMAX;
+    // } else{
+    //     u_norm = (int) u;
+    // }
+
+    u_norm = (int) u;
 
     return u_norm;
 }
