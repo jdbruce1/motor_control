@@ -1,11 +1,60 @@
 #include "positioncontrol.h"
-#include "currentcontrol.h"
+
+#define IMAX 400 // the maximum current control signal (tuneable)
+
+int angle_command; // 10*angle
 
 volatile float Kpp = 0, Kip = 0, Kdp = 0; // position control gains
 
+static volatile int Eint = 0;
+static volatile int e_prev = 0;
+
+extern volatile int current_command; // sent from position controller
+
+int pid_position_controller(int measured, int reference){
+    // uses set gains to provide control
+    // takes in the measured and reference ADC counts
+    // outputs the OC1RS setting to reach reference values
+
+    int error;                          // the absolute error in ADC counts
+    float u;                            // the control effort in floating point
+    int u_norm;                         // the control effort, normalized (first to percentage, then to OC1RS setting)
+    int e_dot;
+
+    error = reference - measured;
+    Eint += error;
+    e_dot = error - e_prev;
+    u = (Kpp * error) + (Kip * Eint) + (Kdp * e_dot);     // u calculated in floating point
+
+    e_prev = error;
+
+    if (u > IMAX){  // u_norm is the PWM_val
+        u_norm = IMAX;
+    } else if (u < -IMAX){
+        u_norm  = -IMAX;
+    } else{
+        u_norm = (int) u;
+    }
+
+    return u_norm;
+}
+
+
 void __ISR(_TIMER_4_VECTOR, IPL4SOFT) position_controller(void){
 
-    LATDINV = 0b100;    // toggle digital output
+    switch (get_mode()) {
+        case 4: // HOLD
+            // set current command
+            LATDINV = 0b0100;       // invert pin D2
+            current_command = pid_position_controller(encoder_angle(), angle_command);
+            break;
+        case 5: // TRACK
+            break;
+        default:
+            break;
+    }
+
+
 
     IFS0bits.T4IF = 0;                  // clear interrupt flag
 }

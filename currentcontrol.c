@@ -7,6 +7,8 @@ static volatile int itest_counter = 0;
 static volatile int i_ref = 200;
 static volatile int Eint = 0;
 
+volatile int current_command; // sent from position controller
+
 volatile int mes_array[100];  // measured values to plot
 volatile int ref_array[100];  // reference values to plot
 
@@ -101,12 +103,14 @@ void __ISR(_TIMER_2_VECTOR, IPL5SOFT) current_controller(void){
 
             break;
         case 4: // HOLD
+            // use the current command, as set by position controller
+            LATDINV = 0b1000;       // invert pin D3
+            control_effort = pi_current_controller(isense_curr(), current_command);
+            set_PWM_from_val(control_effort);
             break;
         case 5: // TRACK
             break;
     }
-
-
 
     IFS0bits.T2IF = 0;                  // clear interrupt flag
 
@@ -147,4 +151,8 @@ void currentcontrol_init(){
 
     TRISDbits.TRISD1 = 0;               // set D1 as digital output
     LATDbits.LATD1 = 1;                 // set D1 high to start
+
+    TRISDbits.TRISD3 = 0;               // set D3 as digital output
+    LATDbits.LATD3 = 1;                 // set D3 high to start
+
 }

@@ -2,8 +2,13 @@
 #define POSITIONCONTROL__H__
 
 #include "NU32.h"
+#include "currentcontrol.h"
+#include "utilities.h"
+#include "encoder.h"
 
 extern volatile float Kpp, Kip, Kdp;
+
+extern int angle_command;
 
 void positioncontrol_init();
 

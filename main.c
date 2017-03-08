@@ -13,6 +13,7 @@
 extern int PWM_val;
 extern volatile float Kpc, Kic;
 extern volatile float Kpp, Kip, Kdp;
+extern int angle_command;
 
 extern volatile int mes_array[100];  // measured values to plot
 extern volatile int ref_array[100];  // reference values to plot
@@ -56,6 +57,18 @@ int main(){
         sprintf(lcd_string, "Received %c",buffer[0]);
         LCD_WriteString(lcd_string);
         switch (buffer[0]) {
+            case 'l':
+            {
+                // goes to given angle
+                // angle is expected as 10*angle
+                NU32_ReadUART3(buffer,BUF_SIZE);
+                sscanf(buffer, "%d", &angle_command);
+                mode = HOLD;
+                sprintf(lcd_string, "Command: %d",angle_command/10);
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                break;
+            }
             case 'i':
             {
                 // sets position gains
@@ -92,7 +105,7 @@ int main(){
                     sprintf(buffer, "%d %d\r\n", mes_array[i], ref_array[i]);
                     NU32_WriteUART3(buffer);
                 }
-                sprintf(lcd_string, "Current test done");
+                sprintf(lcd_string, "ITEST done");
                 LCD_Move(1,0);
                 LCD_WriteString(lcd_string);
                 break;
@@ -136,7 +149,7 @@ int main(){
                 // reads the ADC counts
                 sprintf(buffer, "%d\r\n", isense_curr());
                 NU32_WriteUART3(buffer);
-                sprintf(lcd_string, "ADC curr = %d", isense_curr());
+                sprintf(lcd_string, "Curr = %d mA", isense_curr());
                 LCD_Move(1,0);
                 LCD_WriteString(lcd_string);
                 break;
