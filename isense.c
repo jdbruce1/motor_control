@@ -40,5 +40,7 @@ int isense_curr(){
     unsigned int counts = isense_counts();
     unsigned int intermediate = (counts << 2) - (counts >> 1); // 3.5*counts = 4*counts - counts/2
     int milliamps = intermediate - 1760;
+    // test code to see if I can get better results
+    milliamps = (milliamps - 15) * 3 / 2;
     return milliamps;
 }
