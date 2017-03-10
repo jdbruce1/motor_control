@@ -83,6 +83,28 @@ int main(){
                 break;
             }
             case 'n': // fall through to m case, same on PIC side
+            {
+                // load step trajectory
+                // listen for trajectory length
+                NU32_ReadUART3(buffer,BUF_SIZE);
+                sscanf(buffer, "%d", &traj_len);
+                if (traj_len > MAX_TRAJ) traj_len = MAX_TRAJ;
+                for (i=0; i<traj_len; i++){
+                    NU32_ReadUART3(buffer,BUF_SIZE);
+                    sscanf(buffer, "%d", &ref_pos_array[i]); // angles should be sent in 10ths of degrees
+                }
+                sprintf(lcd_string, "Array Stored");
+                LCD_Move(1,0);
+                LCD_WriteString(lcd_string);
+                // remove this later
+                // sprintf(buffer, "%d\r\n", traj_len);
+                // NU32_WriteUART3(buffer);
+                // for (i=0; i<traj_len; i++){                      // send plot data to MATLAB
+                //     sprintf(buffer, "%d %d\r\n", 0, ref_pos_array[i]);
+                //     NU32_WriteUART3(buffer);
+                // }
+                break;
+            }
             case 'm':
             {
                 // load step trajectory
@@ -97,6 +119,13 @@ int main(){
                 sprintf(lcd_string, "Array Stored");
                 LCD_Move(1,0);
                 LCD_WriteString(lcd_string);
+                // remove this later
+                // sprintf(buffer, "%d\r\n", traj_len);
+                // NU32_WriteUART3(buffer);
+                // for (i=0; i<traj_len; i++){                      // send plot data to MATLAB
+                //     sprintf(buffer, "%d %d\r\n", 0, ref_pos_array[i]);
+                //     NU32_WriteUART3(buffer);
+                // }
                 break;
             }
             case 'l':

@@ -79,8 +79,6 @@ void positioncontrol_init(){
     // setup for 200 Hz ISR on Timer4
     // we're going to need a prescaler here, probably not that large though
 
-    // \/ all this is wrong, I just copied it from the other function
-
     T4CONbits.TCKPS = 0b11;             // Timer4 prescaler N=8
     PR4 = 49999;                        // period = (PR4+1) * N * 12.5 ns = 5 ms, 200 Hz
     TMR4 = 0;                           // initial TMR2 count is 0
